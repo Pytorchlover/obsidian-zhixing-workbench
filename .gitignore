@@ -1,0 +1,16 @@
+node_modules/
+dist/
+*.zip
+__pycache__/
+.DS_Store
+.env
+.env.*
+!.env.example
+*.enc
+*.key
+*.pem
+.obsidian/
+data.json
+paper.json
+local.enc*
+*.log

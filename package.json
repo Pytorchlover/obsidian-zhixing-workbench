@@ -1,0 +1,14 @@
+{
+  "name": "obsidian-zhixing-workbench",
+  "version": "1.1.0",
+  "private": true,
+  "description": "本地研究工作台：任务、专注计时、每日记录、论文阅读、保留版式翻译与流式选区问答。",
+  "scripts": {
+    "build": "python3 scripts/build.py",
+    "test": "node tests/run.cjs",
+    "scan": "python3 scripts/scan-private.py"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('node:assert/strict');const c=require('../src/daily-core');let n=0;const check=(label,fn)=>{fn();n++;};
+check('严格日期',()=>{assert.equal(c.validDay('2026-02-30'),false);assert.equal(c.validDay('2026-99-99'),false);assert.equal(c.validDay('../notes'),false);assert.equal(c.validDay('2026-10-22'),true)});
+const d={...c.freshDraft(),raw:'怀疑 USB 带宽问题\n```\n- [ ] 口述内容\n```',kind:'工作记录',time:'10:36',result:{title:'测试 # USB',points:['带宽可能影响，尚未验证'],questions:['是否与带宽有关？'],tasks:['换控制器测试','整理参数']},selected:[0],dates:{0:'2026-10-23'}};d.sourceRaw=d.raw;d.sourceKind=d.kind;
+check('不确定性保留',()=>assert.equal(c.normalizeResult(d.result).points[0],d.result.points[0]));
+check('只发送本次记录至固定国区模型',()=>{const r=c.makeRequest(d.raw,d.kind,'2026-10-22','fake-only');const b=JSON.parse(r.body);assert.equal(r.url,'https://api.minimax.cn/v1/chat/completions');assert.equal(b.model,'MiniMax-M3.1-Flash');assert.equal(b.reasoning_effort,'low');assert.deepEqual(Object.keys(JSON.parse(b.messages[1].content)),['date','kind','record']);});
+check('忽略思考内容',()=>assert.deepEqual(c.parseResponse({status:200,json:{choices:[{message:{content:JSON.stringify(d.result),reasoning_content:'private thinking'}}]}}),d.result));
+check('错误状态不泄漏响应体',()=>assert.throws(()=>c.parseResponse({status:401,json:{error:'SECRET'}}),e=>!e.message.includes('SECRET')));
+check('拒绝截断及无效格式',()=>{assert.throws(()=>c.parseResponse({status:200,json:{choices:[{finish_reason:'length',message:{content:'{}'}}]}}));assert.throws(()=>c.parseResponse({status:200,json:{choices:[{message:{content:'plain text'}}]}}));assert.throws(()=>c.normalizeResult({title:'标题',points:['要点'],tasks:[{text:'对象'}]}));});
+check('仅所选待办且保留手动日期',()=>{const e=c.entryMarkdown(d);assert.equal(e.tasks.length,1);assert.ok(e.tasks[0].includes('2026-10-23'));assert.ok(!e.tasks.join('').includes('整理参数'));assert.ok(e.block.includes('尚未验证'));});
+check('原文完整且围栏无法逃逸',()=>{const e=c.entryMarkdown(d);assert.ok(e.block.includes('````text\n'+d.raw+'\n````'));});
+check('结果过期只保留原文',()=>{const e=c.entryMarkdown({...d,raw:d.raw+'修改'});assert.equal(e.tasks.length,0);assert.ok(!e.block.includes('#### 整理结果'));});
+check('拒绝坏日期和结构注入',()=>{assert.throws(()=>c.entryMarkdown({...d,dates:{0:'2026-02-30'}}));const e=c.entryMarkdown({...d,result:{...d.result,tasks:['恶意\n- [ ] 第二条']}});assert.equal(e.tasks.length,1);assert.ok(!e.tasks[0].includes('\n'));});
+console.log(`PASS: ${n} daily core checks`);
