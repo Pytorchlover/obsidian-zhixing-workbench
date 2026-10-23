@@ -152,3 +152,20 @@
 
 .zd-recommend-reason:not(.is-expanded) p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .zd-recommend-reason .zd-link{font-size:12px;padding:3px 0;margin-top:4px}
+
+/* Recommendation illustrations retain the complete diagram and its source. */
+.zd-recommend-figure{margin:20px 0}
+.zd-recommend-figure-preview{height:260px;border:1px solid var(--zd-line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:color-mix(in srgb,var(--zd-green) 4%,var(--zd-panel))}
+.zd-recommend-figure-preview:has(img){background:#fff}
+.zd-recommend-figure-preview .zd-recommend-figure-button{display:block;width:100%;height:100%;padding:12px;border:0;border-radius:0;background:transparent;box-shadow:none;cursor:zoom-in}
+.zd-recommend-figure-button img{display:block;width:100%;height:100%;object-fit:contain}
+.zd-recommend-figure-caption{display:flex;justify-content:space-between;gap:12px;color:var(--zd-muted);font-size:12px;margin-top:9px}
+.zd-recommend-figure-caption a{color:var(--zd-muted);text-decoration:none}
+.zd-recommend-figure-caption a:hover{text-decoration:underline}
+.zd-recommend-figure-detail{font-size:12px;line-height:1.7;color:var(--zd-muted);margin-top:8px}
+.zd-recommend-figure-detail summary{cursor:pointer}
+.zd-recommend-figure-detail p{white-space:pre-wrap}
+.zd-recommend-figure.is-unavailable .zd-recommend-figure-preview{height:90px}
+.zd-recommend-figure-modal{width:min(1400px,94vw);max-width:94vw}
+.zd-recommend-figure-modal .modal-content>img{display:block;max-width:100%;max-height:72vh;object-fit:contain;margin:0 auto;background:#fff;border-radius:8px}
+@container (max-width:760px){.zd-recommend-figure-preview{height:190px}.zd-recommend-figure-caption{flex-wrap:wrap}}

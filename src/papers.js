@@ -1,5 +1,5 @@
 'use strict';
-const {ItemView,Modal,Notice,Setting,setIcon,moment,loadPdfJs,Menu}=require('obsidian');
+const {ItemView,Modal,Notice,Setting,setIcon,moment,loadPdfJs,requestUrl,Menu}=require('obsidian');
 const c=require('./paper-core');
 const {mountPaperChat}=require('./paper-chat');
 const serviceFactory=require('./paper-service');
@@ -14,6 +14,7 @@ function btn(p,text,cls,fn,ico){const b=el(p,'button','zd-btn '+(cls||''));b.typ
 function side(root,plugin){const aside=el(root,'aside','zd-side');const brand=el(aside,'div','zd-brand');const s=el(brand,'span','zd-icon');setIcon(s,'sprout');el(brand,'span','','知行之间');const nav=el(aside,'nav','zd-nav');for(const [label,icon,fn]of [['工作台','house',()=>plugin.openDesk()],['每日记录','calendar-days',()=>plugin.openDaily()],['论文','graduation-cap',()=>plugin.openPapers()],['项目空间','folder-open',()=>plugin.openDirectory('项目总览')],['知识索引','book-open',()=>plugin.openDirectory('wiki/index.md')]])btn(nav,label,label==='论文'?'zd-nav-active':'',fn,icon);el(aside,'p','zd-side-label','研究领域');for(const [title,path]of [['VLA 与具身模型','VLA MOC'],['世界模型','世界模型 MOC'],['数据采集','数据采集 MOC'],['机器人工程','机器人工程 MOC'],['Agent 与工具','Agent 学习 MOC']])btn(aside,title,'zd-topic',()=>plugin.openDirectory(path),'circle-small');}
 module.exports=function installPapers(plugin){
  const app=plugin.app,svc=serviceFactory(plugin);plugin.paperServices=svc;
+ plugin.recommendationImages=require('./recommendation-images').createImageService(plugin,{request:requestUrl,loadPdfJs});
  plugin.recommendations=require('./recommendations').createRecommendations(plugin,svc);
  plugin.registerInterval(window.setInterval(()=>plugin.recommendations.tick().catch(()=>{}),60000));
  app.workspace.onLayoutReady(()=>{plugin.recommendations.tick().catch(()=>{});});

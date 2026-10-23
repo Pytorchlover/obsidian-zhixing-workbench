@@ -55,7 +55,7 @@ function createRecommendations(plugin,svc,{now=()=>new Date()}={}){
    }
    report.items.push(item);await save(report);
   }
-  report.items.sort((a,b)=>(b.assessment?.score??-1)-(a.assessment?.score??-1));report.complete=true;report.finished=now().toISOString();await save(report);progress='';if(report.searchErrors.length)error=`${report.searchErrors.length} 个关键词检索失败，结果为部分结果，可手动重试。`;emit();return report;
+  report.items.sort((a,b)=>(b.assessment?.score??-1)-(a.assessment?.score??-1));report.complete=true;report.finished=now().toISOString();await save(report);void plugin.recommendationImages?.prefetch(report.items);progress='';if(report.searchErrors.length)error=`${report.searchErrors.length} 个关键词检索失败，结果为部分结果，可手动重试。`;emit();return report;
  }
  async function refresh(){if(job)return job;job=perform().catch(e=>{error=e.message;throw e;}).finally(()=>{job=null;progress='';emit();});emit();return job;}
  async function tick(){if(closed||job)return;const cfg=config(),date=now();if(!cfg.enabled||date.getHours()<cfg.hour||date.getTime()-lastAttempt<3600000)return;const report=await read(dayOf(date));if(report?.complete&&!report.searchErrors.length&&!report.items.some(p=>p.analysisError)&&JSON.stringify(report.config)===JSON.stringify(cfg))return;await refresh();}
