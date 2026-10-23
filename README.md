@@ -7,7 +7,7 @@
 本地 Markdown · 专注计时 · 每日记录 · 论文分类 · 双语 PDF · 流式选区问答
 
 ![Desktop](https://img.shields.io/badge/Obsidian-Desktop-7c3aed)
-![Version](https://img.shields.io/badge/version-1.1.0-356b50)
+![Version](https://img.shields.io/badge/version-1.2.0-356b50)
 ![Privacy](https://img.shields.io/badge/credentials-local%20encrypted-356b50)
 
 </div>
@@ -30,6 +30,21 @@
 插件遵循 Obsidian 当前主题；在 Obsidian 外观中选择“适应系统”即可跟随系统切换。
 
 ![深色工作台](docs/images/workbench-dark.png)
+
+### assistant-ui 论文对话
+
+右侧聊天栏使用 [assistant-ui](https://github.com/assistant-ui/assistant-ui) 的 React 组件与 LocalRuntime，负责流式 Markdown、自动滚动、停止、复制、重试及回答版本切换。每篇论文可以新建、切换和重命名多个会话，草稿与分支记录保存在该论文的本地 `paper.json`。原有聊天会自动导入「原有对话」，旧字段保留以便回退。
+
+引用按钮可预览原文并跳转到 PDF 页码；选区仍直接交给 MiniMax，不经过额外云端聊天服务。使用自定义模型和历史适配器，不使用 assistant-cloud 账户或云端存储。
+
+![assistant-ui 会话与引用](docs/images/assistant-ui.png)
+
+<details>
+<summary>查看深色聊天栏</summary>
+
+![assistant-ui 深色模式](docs/images/assistant-ui-dark.png)
+
+</details>
 
 ### 选中就问，边生成边读
 
@@ -87,11 +102,13 @@ flowchart LR
 
 ### 从源码构建
 
-需要 Node.js 18+、Python 3。插件本体不需要安装 npm 依赖。
+需要 Node.js 22+、Python 3。源码构建使用 npm 依赖；安装构建包后不需要 Node.js。
 
 ```sh
 git clone git@github.com:Pytorchlover/obsidian-zhixing-workbench.git
 cd obsidian-zhixing-workbench
+npm ci
+npm run typecheck
 npm test
 npm run build
 python3 scripts/install.py --vault "/path/to/your/vault"

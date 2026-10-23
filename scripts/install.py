@@ -8,5 +8,5 @@ target=vault/'.obsidian/plugins/zhixing-research-desk'
 if target.exists() and not args.force:raise SystemExit('Plugin exists; back it up before using --force')
 subprocess.run([sys.executable,str(root/'scripts/build.py')],check=True)
 target.mkdir(parents=True,exist_ok=True)
-for name in ['main.js','styles.css','manifest.json','pdf-layout-worker.py']:shutil.copy2(root/'dist'/name,target/name)
+for name in ['main.js','styles.css','manifest.json','pdf-layout-worker.py','THIRD_PARTY_LICENSES.txt']:shutil.copy2(root/'dist'/name,target/name)
 print('Installed. Enable the plugin in Obsidian Community plugins.')

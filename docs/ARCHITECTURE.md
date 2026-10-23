@@ -5,7 +5,10 @@
 - `main.js`：任务聚合、精确写回、计时、首页入口。
 - `navigation.js`：知识与项目目录视图。
 - `daily.js` / `daily-core.js`：记录整理、加密本地存储、Markdown 保存。
-- `papers.js`：论文库、分类、摘要、聊天与选区快捷操作。
+- `papers.js`：论文库、分类、摘要、选区操作与原生／React 挂载桥接。
+- `paper-chat.tsx`：assistant-ui LocalRuntime、消息和输入组件、会话切换。
+- `paper-chat-adapter.js`：现有 SSE 回调转异步生成器，适配 assistant-ui 模型接口。
+- `paper-threads.js`：旧记录无损迁移、每篇论文的本地会话、草稿与回答分支。
 - `paper-reader.js`：连续页占位、附近页面渲染、PDF.js TextLayer。
 - `paper-core.js`：提取文字、引用校验、上下文选择。
 - `paper-service.js`：论文数据持久化、MiniMax 请求与 PDF 文档缓存。
@@ -16,7 +19,11 @@
 
 选区模式只提供选区和同页附近段落，上下文上限约 6,000 字符。全文模式选择相关段落，上限约 42,000 字符。均仅访问当前论文；附带近期对话，失败或取消的历史回答不再次作为模型事实上下文。
 
-开始请求后，UI 立即创建问题与回答气泡。SSE 内容通过动画帧合并更新正文；完成后渲染 Markdown 与引用。不会重建 PDF 阅读区。阅读历史时，用户离开聊天底部就不强制追随输出。
+assistant-ui 负责创建消息、流式 Markdown、自动滚动、停止、复制和重试。模型适配器逐次 yield 完整的累计文本，完成后附上已校验的段落引用。生成过程不会重建 PDF 阅读区；离开聊天底部阅读时不强制追随输出。
+
+每篇论文的 `assistantChat` 字段独立保存会话列表、当前会话、草稿和带 parentId/headId 的消息仓库。重试保留旧版本，BranchPicker 可切换回答。旧 `chat` 字段仅用于首次迁移，不删除或重写；新问答使用 `persist:false`，通过 HistoryAdapter 持久化，避免混写旧会话。没有配置 assistant-cloud，也不需要额外聊天服务器。
+
+React 根节点在页面重建或关闭前卸载，同时取消模型请求；组件按论文／会话 ID 重新挂载，异步写入绑定原会话 ID。PDF 选区由外部订阅桥接，切换会话时清空选区。
 
 停止按钮触发 AbortController 并销毁 HTTPS 请求。已收到的内容保存为 cancelled；网络断开、超时或截断保存为 error，供用户查看与重试。部分回答不是完整结论。
 
@@ -26,7 +33,7 @@
 
 ## 可复现构建
 
-`python3 scripts/build.py` 将本地 CommonJS 模块内联到一个 `main.js`；只复制样式、清单和 Python worker。构建不读取知识库、不读取密钥。`scripts/install.py` 必须显式指定目标知识库。
+先执行 `npm ci`。`python3 scripts/build.py` 调用 esbuild，把本地模块、React 和 assistant-ui 打包为一个 `main.js`，将 obsidian、electron 与 Node 内置模块保留为运行时依赖；复制样式、清单、Python worker 及依赖许可。构建不读取知识库、不读取密钥。`scripts/install.py` 必须显式指定目标知识库。
 
 ## 测试边界
 
