@@ -1,8 +1,8 @@
 'use strict';
 // Each page keeps its layout slot. Only nearby pages allocate canvas bitmaps.
-module.exports=function continuousPdf({stage,getPdf,getZoom,startPage,onPage,getTextLayer,onSelection}){
+module.exports=function continuousPdf({stage,getPdf,getZoom,startPage,onPage,getTextLayer,onSelection,tool='select'}){
  let disposed=false,pdf,slots=[],generation=0,running=false,frame=0,width=0,current=startPage;
- const tasks=new Set();
+ const tasks=new Set(),pan=bindPan(stage,tool);
  const make=(parent,tag,cls,text)=>parent.createEl(tag,{cls,text});
  const loading=make(stage,'p','zd-muted','正在打开 PDF…');
  function activePage(){const y=stage.scrollTop+Math.min(100,stage.clientHeight/4);return slots.find(s=>s.node.offsetTop+s.node.offsetHeight>y)||slots.at(-1);}
@@ -18,8 +18,26 @@ module.exports=function continuousPdf({stage,getPdf,getZoom,startPage,onPage,get
  }
  function go(n){const s=slots[n-1];if(!s)return;current=n;stage.scrollTop=s.node.offsetTop;onPage(n);schedule();}
  function resize(){if(!slots.length||disposed)return;const anchor=activePage(),fraction=anchor?(stage.scrollTop-anchor.node.offsetTop)/anchor.node.offsetHeight:0;generation++;tasks.forEach(t=>t.cancel());width=stage.clientWidth;for(const s of slots){s.width=Math.max(100,Math.min(1800,width-26))*getZoom();s.node.style.width=s.width+'px';s.node.style.height=s.width*s.base.height/s.base.width+'px';}if(anchor)stage.scrollTop=anchor.node.offsetTop+fraction*anchor.node.offsetHeight;schedule();}
- const selected=()=>{const selection=stage.ownerDocument.getSelection();if(!selection||selection.isCollapsed)return;const range=selection.getRangeAt(0);if(!stage.contains(range.startContainer)||!stage.contains(range.endContainer))return;const node=(range.startContainer.nodeType===1?range.startContainer:range.startContainer.parentElement).closest('.zd-paper-page');const text=selection.toString().trim();if(text&&node)onSelection?.({text:text.slice(0,6000),page:Number(node.dataset.page),rect:range.getBoundingClientRect().toJSON()});};stage.addEventListener('mouseup',selected);stage.addEventListener('keyup',selected);
+ const selected=()=>{if(pan.isPanning())return;const selection=stage.ownerDocument.getSelection();if(!selection||selection.isCollapsed)return;const range=selection.getRangeAt(0);if(!stage.contains(range.startContainer)||!stage.contains(range.endContainer))return;const node=(range.startContainer.nodeType===1?range.startContainer:range.startContainer.parentElement).closest('.zd-paper-page');const text=selection.toString().trim();if(text&&node)onSelection?.({text:text.slice(0,6000),page:Number(node.dataset.page),rect:range.getBoundingClientRect().toJSON()});};stage.addEventListener('mouseup',selected);stage.addEventListener('keyup',selected);
  const observer=new ResizeObserver(()=>{if(stage.clientWidth!==width)resize();});observer.observe(stage);stage.addEventListener('scroll',schedule,{passive:true});
  const ready=(async()=>{try{pdf=await getPdf();if(disposed)return;loading.remove();for(let n=1;n<=pdf.numPages;n++){const page=await pdf.getPage(n);if(disposed)return;const node=make(stage,'div','zd-paper-page');node.dataset.page=String(n);const label=make(node,'button','zd-paper-page-placeholder',`第 ${n} 页`);label.type='button';label.tabIndex=-1;slots.push({number:n,node,label,base:page.getViewport({scale:1}),version:-1,failed:-1});}resize();go(Math.min(startPage,pdf.numPages));await paint();}catch(e){if(!disposed){loading.remove();make(stage,'p','zd-muted','PDF 打开失败，请用上方“原始 PDF”打开，或切换版本重试。');}}})();
- return{ready,go,resize,dispose(){disposed=true;generation++;stage.removeEventListener('mouseup',selected);stage.removeEventListener('keyup',selected);observer.disconnect();stage.removeEventListener('scroll',schedule);cancelAnimationFrame(frame);tasks.forEach(t=>t.cancel());for(const s of slots){const canvas=s.node.querySelector('canvas');if(canvas){canvas.width=0;canvas.height=0;}}}};
+ return{ready,go,resize,setTool:pan.setTool,dispose(){pan.dispose();disposed=true;generation++;stage.removeEventListener('mouseup',selected);stage.removeEventListener('keyup',selected);observer.disconnect();stage.removeEventListener('scroll',schedule);cancelAnimationFrame(frame);tasks.forEach(t=>t.cancel());for(const s of slots){const canvas=s.node.querySelector('canvas');if(canvas){canvas.width=0;canvas.height=0;}}}};
 };
+
+// Drag the bounded PDF viewport without intercepting normal text selection.
+function bindPan(stage,initial='select'){
+ let tool=initial,drag=null,space=false;
+ const doc=stage.ownerDocument;
+ const enabled=()=>tool==='hand'||space;
+ const update=()=>{stage.classList.toggle('is-hand-tool',enabled());stage.classList.toggle('is-panning',!!drag);};
+ const end=e=>{if(!drag||e&&e.pointerId!==undefined&&e.pointerId!==drag.id)return;const id=drag.id;drag=null;if(stage.hasPointerCapture?.(id))stage.releasePointerCapture(id);update();};
+ const down=e=>{if(!enabled()||e.button!==0||e.isPrimary===false||e.target.closest?.('a,input,textarea,select'))return;e.preventDefault();drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:stage.scrollLeft,top:stage.scrollTop};stage.setPointerCapture(e.pointerId);stage.focus({preventScroll:true});update();};
+ const move=e=>{if(!drag||e.pointerId!==drag.id)return;e.preventDefault();stage.scrollLeft=drag.left+drag.x-e.clientX;stage.scrollTop=drag.top+drag.y-e.clientY;};
+ const keydown=e=>{if(e.code!=='Space'||e.ctrlKey||e.metaKey||e.altKey||e.target.closest?.('input,textarea,select,[contenteditable="true"]'))return;e.preventDefault();space=true;update();};
+ const keyup=e=>{if(e.code==='Space'){space=false;end();update();}};
+ const blur=()=>{space=false;end();update();};
+ stage.addEventListener('pointerdown',down);stage.addEventListener('pointermove',move);stage.addEventListener('pointerup',end);stage.addEventListener('pointercancel',end);stage.addEventListener('lostpointercapture',end);stage.addEventListener('keydown',keydown);doc.addEventListener('keyup',keyup);doc.defaultView.addEventListener('blur',blur);
+ update();
+ return{setTool(value){end();tool=value==='hand'?'hand':'select';update();},isPanning:enabled,dispose(){end();stage.removeEventListener('pointerdown',down);stage.removeEventListener('pointermove',move);stage.removeEventListener('pointerup',end);stage.removeEventListener('pointercancel',end);stage.removeEventListener('lostpointercapture',end);stage.removeEventListener('keydown',keydown);doc.removeEventListener('keyup',keyup);doc.defaultView.removeEventListener('blur',blur);stage.classList.remove('is-hand-tool','is-panning');}};
+}
+module.exports.bindPan=bindPan;

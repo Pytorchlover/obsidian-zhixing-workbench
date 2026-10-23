@@ -1,6 +1,6 @@
 {
   "name": "obsidian-zhixing-workbench",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "private": true,
   "description": "本地研究工作台：任务、专注计时、每日记录、论文阅读、保留版式翻译与流式选区问答。",
   "scripts": {

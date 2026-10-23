@@ -3,7 +3,7 @@ import {createRoot} from 'react-dom/client';
 import {AssistantRuntimeProvider,useLocalRuntime,ExportedMessageRepository,ThreadPrimitive,MessagePrimitive,ComposerPrimitive,ActionBarPrimitive,BranchPickerPrimitive,useAuiState} from '@assistant-ui/react';
 import {MarkdownTextPrimitive} from '@assistant-ui/react-markdown';
 const {createStore}=require('./paper-threads');
-const {modelAdapter}=require('./paper-chat-adapter');
+const {modelAdapter,captureContext}=require('./paper-chat-adapter');
 const {blocks}=require('./paper-core');
 const ChatContext=createContext<any>(null);
 const useChat=()=>useContext(ChatContext);
@@ -19,7 +19,7 @@ function Message(){
  const refs=(custom?.refs||[]).filter((id:string)=>blocks(paper).some((b:any)=>b.id===id));
  return <MessagePrimitive.Root className={'zd-aui-message '+role}>
   <div className="zd-aui-role">{role==='user'?'我':'论文助手'}</div>
-  {custom?.selection&&<blockquote className="zd-aui-quote">第 {custom.selection.page} 页 · {custom.selection.text}</blockquote>}
+  {role==='user'&&custom?.selection&&<blockquote className="zd-aui-quote">第 {custom.selection.page} 页 · {custom.selection.text}</blockquote>}
   <div className="zd-aui-markdown"><MessagePrimitive.Parts components={{Text}} /></div>
   {status?.type==='running'&&<span className="zd-aui-generating" role="status">正在回答…</span>}
   {refs.length>0&&<button className="zd-aui-evidence" onClick={()=>preview(refs)}>查看原文依据 · {new Set(refs.map((id:string)=>id.match(/^p([0-9]+)/)?.[1])).size} 页 ↗</button>}
@@ -31,10 +31,10 @@ function Message(){
 function Conversation({thread,store,bridge,refresh}:any){
  const [saveError,setSaveError]=useState('');
  const context:any=useSyncExternalStore(bridge.subscribe,bridge.snapshot);
- const adapter=useMemo(()=>modelAdapter({svc:bridge.svc,paper:bridge.paper,context:bridge.context,onBusy:bridge.busy,initial:thread.repository.messages}),[bridge]);
+ const adapter=useMemo(()=>modelAdapter({svc:bridge.svc,paper:bridge.paper,context:bridge.context,onBusy:bridge.busy,onSubmitted:bridge.consumeSelection,initial:thread.repository.messages}),[bridge]);
  const history=useMemo(()=>({scopeId:bridge.paper.id+'/'+thread.id,
   load:async()=>{const t=await store.get(thread.id);return ExportedMessageRepository.fromBranchableArray(t.repository.messages.map((item:any)=>({...item,message:{...item.message,createdAt:new Date(item.message.createdAt)}})),{headId:t.repository.headId});},
-  append:async(item:any)=>{try{const record=item.message.role==='user'?{...item,message:{...item.message,metadata:{...item.message.metadata,custom:{...item.message.metadata?.custom,selection:bridge.context.selection,scope:bridge.context.scope}}}}:item;await store.append(thread.id,record);setSaveError('');refresh();}catch(e:any){setSaveError('对话未保存：'+e.message);throw e;}},
+  append:async(item:any)=>{try{await store.append(thread.id,item);setSaveError('');refresh();}catch(e:any){setSaveError('对话未保存：'+e.message);throw e;}},
   update:async(item:any)=>{try{await store.append(thread.id,item);setSaveError('');}catch(e:any){setSaveError('对话未保存：'+e.message);throw e;}}
  }),[thread.id,store,bridge,refresh]);
  const runtime=useLocalRuntime(adapter,{adapters:{history}});
@@ -45,10 +45,11 @@ function Conversation({thread,store,bridge,refresh}:any){
   const composer=runtime.thread.composer;
   composer.setText(thread.draft||'');
   bridge.runtime=runtime;
+  const unregister=runtime.registerModelContextProvider({getModelContext:()=>({unstable_composerMetadata:captureContext(bridge.context)})});
   let previous=composer.getState().text,head:string|null|undefined;
   const unsubscribe=composer.subscribe(()=>{const text=composer.getState().text;if(text===previous)return;previous=text;bridge.queue(()=>store.draft(thread.id,text)).catch((e:any)=>setSaveError('草稿未保存：'+e.message));});
   const stop=runtime.thread.subscribe(()=>{const state=runtime.thread.getState();if(!state.isLoading&&!state.isRunning){const id=state.messages.at(-1)?.id||null;if(head!==id){head=id;bridge.queue(()=>store.head(thread.id,id)).catch((e:any)=>setSaveError('会话未保存：'+e.message));}}});
-  return()=>{unsubscribe();stop();runtime.thread.cancelRun();if(bridge.runtime===runtime)bridge.runtime=null;};
+  return()=>{unregister();unsubscribe();stop();runtime.thread.cancelRun();if(bridge.runtime===runtime)bridge.runtime=null;};
  },[runtime,thread.id,bridge,store]);
  return <AssistantRuntimeProvider runtime={runtime}><ThreadPrimitive.Root className="zd-aui-thread">
   <ThreadPrimitive.Viewport className="zd-aui-viewport" autoScroll aria-label="论文对话记录">
@@ -79,10 +80,11 @@ function Chat({store,bridge,initial}:any){
 export function mountPaperChat(host:HTMLElement,options:any){
  const root=createRoot(host),listeners=new Set<()=>void>();let snapshot:any={selection:options.selection||null,scope:options.selection?'selection':'paper',busy:false},serial=Promise.resolve();
  const emit=()=>{snapshot={...snapshot};listeners.forEach(fn=>fn());};
- const bridge:any={...options,context:{selection:snapshot.selection,scope:snapshot.scope,page:options.page},runtime:null,isBusy:false,notice:'',
+ const bridge:any={...options,context:{selection:snapshot.selection,scope:snapshot.scope,page:options.page,selectionRevision:0},runtime:null,isBusy:false,notice:'',
   snapshot:()=>snapshot,subscribe:(fn:()=>void)=>{listeners.add(fn);return()=>listeners.delete(fn);},
   queue:(fn:any)=>{serial=serial.catch(()=>{}).then(fn);return serial;},flush:()=>serial,
-  setSelection:(value:any)=>{snapshot.selection=value?{text:value.text,page:value.page,mode:value.mode}:null;snapshot.scope=value?'selection':'paper';bridge.context.selection=snapshot.selection;bridge.context.scope=snapshot.scope;options.onSelectionChange?.(snapshot.selection);emit();},
+  setSelection:(value:any)=>{bridge.context.selectionRevision++;snapshot.selection=value?{text:value.text,page:value.page,mode:value.mode}:null;snapshot.scope=value?'selection':'paper';bridge.context.selection=snapshot.selection;bridge.context.scope=snapshot.scope;options.onSelectionChange?.(snapshot.selection);emit();},
+  consumeSelection:(sent:any)=>{if(sent.selectionRevision===bridge.context.selectionRevision)bridge.setSelection(null);},
   setScope:(scope:string)=>{snapshot.scope=scope;bridge.context.scope=scope;emit();},
   busy:(value:boolean)=>{if(disposed)return;bridge.isBusy=value;snapshot.busy=value;options.onBusy(value);emit();},
   cancel:()=>bridge.runtime?.thread.cancelRun(),

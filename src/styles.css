@@ -169,3 +169,7 @@
 .zd-recommend-figure-modal{width:min(1400px,94vw);max-width:94vw}
 .zd-recommend-figure-modal .modal-content>img{display:block;max-width:100%;max-height:72vh;object-fit:contain;margin:0 auto;background:#fff;border-radius:8px}
 @container (max-width:760px){.zd-recommend-figure-preview{height:190px}.zd-recommend-figure-caption{flex-wrap:wrap}}
+
+/* PDF hand tool keeps both scroll axes available at any zoom level. */
+.zd-paper-interaction{display:flex;gap:3px;align-items:center}.zd-paper-interaction .zd-btn{font-size:12px;padding:6px 9px}.zd-paper-interaction .is-active{background:var(--zd-theme-soft);color:var(--zd-green)}
+.zd-paper-continuous.is-hand-tool,.zd-paper-continuous.is-hand-tool *{cursor:grab!important;user-select:none!important;-webkit-user-select:none!important}.zd-paper-continuous.is-panning,.zd-paper-continuous.is-panning *{cursor:grabbing!important}.zd-paper-continuous.is-hand-tool{touch-action:none}
