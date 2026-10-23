@@ -16,6 +16,7 @@ The PDF text overlay uses Obsidian-provided [PDF.js](https://github.com/mozilla/
 
 - [assistant-ui](https://github.com/assistant-ui/assistant-ui): `@assistant-ui/react` 0.15.30 and `@assistant-ui/react-markdown` 0.14.24, MIT.
 - [React](https://github.com/facebook/react): React and React DOM 19.3.1, MIT.
+- [remark-gfm](https://github.com/remarkjs/remark-gfm): 4.0.1, MIT; enables tables, task lists, strikethrough, autolinks and footnotes in chat Markdown.
 
 The workbench uses assistant-ui primitives and LocalRuntime with local history and MiniMax model adapters. No assistant-cloud account or service is used. The release archive includes `THIRD_PARTY_LICENSES.txt` generated from dependencies present in the bundle; esbuild also preserves upstream legal comments in `main.js`.
 

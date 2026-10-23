@@ -173,3 +173,8 @@
 /* PDF hand tool keeps both scroll axes available at any zoom level. */
 .zd-paper-interaction{display:flex;gap:3px;align-items:center}.zd-paper-interaction .zd-btn{font-size:12px;padding:6px 9px}.zd-paper-interaction .is-active{background:var(--zd-theme-soft);color:var(--zd-green)}
 .zd-paper-continuous.is-hand-tool,.zd-paper-continuous.is-hand-tool *{cursor:grab!important;user-select:none!important;-webkit-user-select:none!important}.zd-paper-continuous.is-panning,.zd-paper-continuous.is-panning *{cursor:grabbing!important}.zd-paper-continuous.is-hand-tool{touch-action:none}
+
+/* GFM tables scroll inside the conversation without widening the sidebar. */
+.zd-aui-markdown{min-width:0;max-width:100%}.zd-aui-table-scroll{max-width:100%;overflow-x:auto;margin:12px 0;border:1px solid var(--zd-line);border-radius:7px;scrollbar-width:thin;overscroll-behavior-x:contain}.zd-aui-table-scroll:focus-visible{outline:2px solid var(--zd-green);outline-offset:2px}
+.zd-aui-table-scroll>table{display:table;width:100%;max-width:none;margin:0;border-collapse:collapse;table-layout:auto;overflow:visible;font-size:12px;line-height:1.65}.zd-aui-table-scroll th,.zd-aui-table-scroll td{min-width:90px;padding:8px 10px;border:1px solid var(--zd-line);vertical-align:top;white-space:normal;overflow-wrap:break-word}.zd-aui-table-scroll th{background:var(--zd-theme-soft);font-weight:600}.zd-aui-table-scroll p{margin:0}
+.zd-aui-markdown .task-list-item{list-style:none}.zd-aui-markdown .task-list-item input[type=checkbox]{appearance:auto;margin:0 6px 0 -18px;accent-color:var(--zd-green);vertical-align:middle}.zd-aui-markdown .footnotes{margin-top:14px;border-top:1px solid var(--zd-line);font-size:11px;color:var(--zd-muted)}

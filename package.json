@@ -1,6 +1,6 @@
 {
   "name": "obsidian-zhixing-workbench",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "private": true,
   "description": "本地研究工作台：任务、专注计时、每日记录、论文阅读、保留版式翻译与流式选区问答。",
   "scripts": {
@@ -16,7 +16,8 @@
     "@assistant-ui/react": "0.15.30",
     "@assistant-ui/react-markdown": "0.14.24",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "remark-gfm": "4.0.1"
   },
   "devDependencies": {
     "@types/node": "26.6.5",
