@@ -18,3 +18,9 @@ The PDF text overlay uses Obsidian-provided [PDF.js](https://github.com/mozilla/
 - [React](https://github.com/facebook/react): React and React DOM 19.3.1, MIT.
 
 The workbench uses assistant-ui primitives and LocalRuntime with local history and MiniMax model adapters. No assistant-cloud account or service is used. The release archive includes `THIRD_PARTY_LICENSES.txt` generated from dependencies present in the bundle; esbuild also preserves upstream legal comments in `main.js`.
+
+## Recommendation rubric and migration
+
+The scoring prompt is adapted from [WujieHOT](https://github.com/Pytorchlover/WujieHOT), commit `5af82e82cb37b9b6bcd3598877feba14a1924d29`, itself based on AIHOT. The upstream MIT notice (Copyright 2026 数字生命卡兹克) is preserved in `docs/licenses/WujieHOT-LICENSE.txt` and included in the built release notices. The attention score is not an academic quality certification.
+
+The optional offline Zotero migration script uses a separately installed PyMuPDF 1.26.5 (AGPL-3.0 / commercial licensing). PyMuPDF is not bundled with the Obsidian plugin. See [PyMuPDF licensing](https://pymupdf.readthedocs.io/en/latest/about.html#license-and-copyright).

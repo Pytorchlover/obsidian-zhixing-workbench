@@ -20,4 +20,5 @@ for(const [folder,pkg] of [...packages].sort((a,b)=>a[1].name.localeCompare(b[1]
  for(const file of files){try{notices+=await readFile(join(folder,file),'utf8');notices+='\n';}catch{}}
  notices+='\n----------------------------------------\n\n';
 }
+notices+='\nWujieHOT / AIHOT scoring prompt (adapted)\n'+await readFile('docs/licenses/WujieHOT-LICENSE.txt','utf8');
 await writeFile('dist/THIRD_PARTY_LICENSES.txt',notices);

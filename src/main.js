@@ -53,6 +53,7 @@ class Desk{
     this.homeNav=button(nav,'工作台','zd-nav-active',()=>this.selectTab('today'),'house');
     button(nav,'每日记录','',()=>this.act(()=>this.plugin.openDaily()),'calendar-days');
     button(nav,'论文','',()=>this.act(()=>this.plugin.openPapers()),'graduation-cap');
+    button(nav,'每日推荐','',()=>this.act(()=>this.plugin.openRecommendations()),'sparkles');
     button(nav,'项目空间','',()=>this.plugin.pickProjects(),'folder-open');
     button(nav,'知识索引','',()=>this.plugin.openNote('wiki/index.md'),'book-open');
     el(side,'p','zd-side-label','研究领域');

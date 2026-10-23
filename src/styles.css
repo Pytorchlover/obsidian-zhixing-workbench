@@ -120,3 +120,35 @@
 @keyframes zd-arxiv-enter{from{opacity:.6;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
 @container(max-width:760px){.zd-arxiv-intro{margin:24px 0}.zd-arxiv-intro h2{font-size:22px}.zd-arxiv-search{gap:8px;padding-left:12px}.zd-arxiv-search>.zd-btn{padding:9px 12px;font-size:12px}.zd-arxiv-search input{font-size:13px}.zd-arxiv-options{gap:12px}.zd-arxiv-option:last-child{margin-left:0}.zd-arxiv-result-heading{align-items:start;flex-direction:column;gap:6px}.zd-arxiv-title{font-size:17px}.zd-arxiv-actions{gap:8px;flex-wrap:wrap}.zd-arxiv-import-status{flex:1;min-width:100px}.zd-library-tabs{gap:22px;margin-bottom:20px}}
 @media(prefers-reduced-motion:reduce){.zd-arxiv *{animation:none!important;transition:none!important}}
+
+/* Daily papers: restrained cards, matching the researcher desk palette. */
+.zd-recommendations{max-width:1100px;margin:0 auto;padding-bottom:48px}
+.zd-recommend-heading,.zd-recommend-card-top,.zd-recommend-actions{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.zd-recommend-heading h2{font-size:25px;font-weight:600;margin:14px 0 6px}
+.zd-recommend-settings,.zd-recommend-method{border-bottom:1px solid var(--zd-line);padding:16px 0;color:var(--zd-muted)}
+.zd-recommend-settings summary,.zd-recommend-method summary,.zd-recommend-evidence summary{cursor:pointer;color:var(--zd-text);font-size:13px;line-height:1.8}
+.zd-recommend-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:22px 0}
+.zd-recommend-field{display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--zd-text)}
+.zd-recommend-field:has(textarea),.zd-recommend-form>p{grid-column:1/-1}
+.zd-recommend-field textarea,.zd-recommend-field input:not([type=checkbox]){width:100%;background:var(--zd-panel);color:var(--zd-text);border:1px solid var(--zd-line);border-radius:8px;padding:10px 12px;box-shadow:none}
+.zd-recommend-field:has([type=checkbox]){flex-direction:row-reverse;justify-content:flex-end;align-items:center}
+.zd-recommend-list{display:grid;gap:20px;margin-top:25px}
+.zd-recommend-card{border:1px solid var(--zd-line);border-radius:14px;background:var(--zd-panel);padding:26px 30px}
+.zd-recommend-topic{font-size:12px;color:var(--zd-muted)}
+.zd-recommend-score{flex-shrink:0;color:var(--zd-green);font-size:12px;font-weight:600}
+.zd-recommend-card h3{font-size:21px;line-height:1.55;margin:15px 0 7px}
+.zd-recommend-card h3 a{color:var(--zd-text);text-decoration:none}
+.zd-recommend-card h3 a:hover{text-decoration:underline}
+.zd-recommend-original{font-size:13px;color:var(--zd-muted);margin:0 0 12px}
+.zd-recommend-brief,.zd-recommend-reason p{line-height:1.85;font-size:14px;white-space:pre-wrap}
+.zd-recommend-reason{padding:14px 18px;border-left:2px solid var(--zd-green);background:color-mix(in srgb,var(--zd-green) 5%,transparent);margin:20px 0}
+.zd-recommend-reason strong{font-size:12px;color:var(--zd-green)}
+.zd-recommend-reason p{margin:5px 0}
+.zd-recommend-evidence{margin:16px 0;font-size:13px;line-height:1.8;color:var(--zd-muted)}
+.zd-recommend-evidence .zd-link{display:block;max-width:100%;white-space:normal;text-align:left;margin:8px 0}
+.zd-recommend-actions{justify-content:flex-start;margin-top:20px}
+.zd-recommend-status{color:var(--zd-muted);font-size:13px;min-height:1em}
+@container (max-width:760px){.zd-recommend-card{padding:20px}.zd-recommend-card-top,.zd-recommend-heading{align-items:flex-start;flex-direction:column}.zd-recommend-form{grid-template-columns:1fr}.zd-recommend-card h3{font-size:18px}}
+
+.zd-recommend-reason:not(.is-expanded) p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.zd-recommend-reason .zd-link{font-size:12px;padding:3px 0;margin-top:4px}

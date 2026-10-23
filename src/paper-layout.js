@@ -7,7 +7,7 @@ module.exports=function layoutService(plugin,service){
  async function perform(id,progress=()=>{},options={}){
   if(active)throw new Error('已有 PDF 翻译正在进行，请等待完成。');
   if(!fs.existsSync(python))throw new Error('本机 PDF 翻译引擎尚未安装，请查看工作台使用指南。');
-  const paper=await service.load(id);if(stopped)throw new Error('插件已关闭。');if(paper.layoutPdf&&!options.force&&await plugin.app.vault.adapter.exists(paper.layoutPdf.monoPath)&&await plugin.app.vault.adapter.exists(paper.layoutPdf.dualPath))return paper;
+  const paper=await service.load(id);if(stopped)throw new Error('插件已关闭。');if(paper.layoutPdf?.monoPath&&paper.layoutPdf?.dualPath&&!options.force&&await plugin.app.vault.adapter.exists(paper.layoutPdf.monoPath)&&await plugin.app.vault.adapter.exists(paper.layoutPdf.dualPath))return paper;
   const key=plugin.dailyServices.store().data.key;if(!key)throw new Error('请先配置 MiniMax 密钥。');
   const vault=plugin.app.vault,root=vault.adapter.getBasePath(),worker=path.join(root,plugin.manifest.dir,'pdf-layout-worker.py'),input=path.join(root,paper.pdfPath);
   const output=fs.mkdtempSync(path.join(os.tmpdir(),'zhixing-layout-'));let result;progress('正在准备版式分析与翻译…');

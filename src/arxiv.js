@@ -3,7 +3,7 @@ const {arxivId}=require('./paper-core');
 const ATOM='http://www.w3.org/2005/Atom';
 const clean=value=>String(value||'').replace(/\s+/g,' ').trim();
 const baseId=value=>arxivId(value)?.replace(/v[0-9]+$/,'')||null;
-function queryUrl({query,field='all',sort='relevance',start=0,size=10}={}){
+function queryUrl({query,field='all',sort='relevance',start=0,size=10,since='',categories=[]}={}){
  const text=clean(query);
  if(!text||text.length>300)throw Error('请输入 1–300 字的关键词、标题、作者或 arXiv 编号。');
  if(!['all','ti','au'].includes(field)||!['relevance','submittedDate','lastUpdatedDate'].includes(sort))throw Error('搜索条件无效。');
@@ -13,6 +13,15 @@ function queryUrl({query,field='all',sort='relevance',start=0,size=10}={}){
  else{
   const tokens=text.match(/"[^"]+"|[^\s"]+/g)||[];
   params.set('search_query',tokens.map(token=>`${field}:${token.startsWith('"')?token:'"'+token+'"'}`).join(' AND '));
+ }
+ if(since||categories.length){
+  if(id)throw Error('编号搜索不支持时间或领域过滤。');
+  if(since&&!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(since))throw Error('搜索日期无效。');
+  if(!Array.isArray(categories)||categories.length>10||categories.some(x=>!/^cs\.[A-Z]{2}$/.test(x)))throw Error('领域过滤无效。');
+  let q='('+params.get('search_query')+')';
+  if(since)q+=' AND submittedDate:['+since.replaceAll('-','')+'0000 TO 299912312359]';
+  if(categories.length)q+=' AND ('+categories.map(x=>'cat:'+x).join(' OR ')+')';
+  params.set('search_query',q);
  }
  return 'https://export.arxiv.org/api/query?'+params;
 }

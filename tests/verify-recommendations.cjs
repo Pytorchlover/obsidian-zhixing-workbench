@@ -1,0 +1,21 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {settings,defaults,candidates,score,analysis,createRecommendations,ROOT}=require('../src/recommendations');
+const {queryUrl}=require('../src/arxiv');
+const p={id:'2610.12345v1',title:'Egocentric hand reconstruction',abstract:'A method and evaluation.',published:'2026-10-21',updated:'2026-10-21',categories:['cs.CV'],source:'https://arxiv.org/abs/2610.12345v1'};
+const details={titleZh:'手部重建',brief:'摘要',reason:'与手部重建相关',limitations:'全文待核对',evidence:Object.fromEntries(['method','experiments','reproducibility'].map(k=>[k,{status:'unknown',note:'待核对'}]))};
+let checks=0;
+function fixture(){const files=new Map(),cfg={...defaults(),keywords:['hand reconstruction'],limit:2},plugin={data:{recommendations:cfg},app:{vault:{getFiles:()=>[...files.keys()].map(path=>({path})),getAbstractFileByPath:path=>files.has(path)?{path}:null,read:async f=>files.get(f.path),create:async(path,raw)=>files.set(path,raw),modify:async(f,raw)=>files.set(f.path,raw)}},ensureFolders:async()=>{},transact:async fn=>fn(plugin.data),register:()=>{}};let clock=new Date('2026-10-23T10:00:00'),calls=0,fail=false,invalid=false;const svc={searchArxiv:async()=>{if(fail)throw Error('offline');return{items:[p],total:1};},ai:async sys=>{calls++;return invalid?{}:sys.includes('attentionScore')?{attentionScore:calls%2?71:68}:details;}};const service=createRecommendations(plugin,svc,{now:()=>clock});return{files,service,plugin,get calls(){return calls;},set date(v){clock=new Date(v);},set fail(v){fail=v;},set invalid(v){invalid=v;}};}
+(async()=>{
+ for(const cfg of [{keywords:[]},{hour:24},{days:0},{limit:99},{minScore:101},{categories:['cs.RO OR all:*']}])assert.throws(()=>settings(cfg));assert.equal(settings({keywords:['hand','hand']}).keywords.length,1);checks++;
+ const url=new URL(queryUrl({query:'hand reconstruction',since:'2026-10-09',categories:['cs.RO','cs.CV']}));assert.match(url.searchParams.get('search_query'),/submittedDate:\[202610090000 TO 299912312359\]/);assert.match(url.searchParams.get('search_query'),/cat:cs.RO OR cat:cs.CV/);assert.throws(()=>queryUrl({query:'x',since:'bad'}));checks++;
+ const cfg=defaults(),pool=candidates([{keyword:'hand',items:[p,{...p,id:'2610.12345v2'},{...p,id:'2601.11111',published:'2026-01-01'}]},{keyword:'data',items:[{...p,id:'2610.22222'}]}],cfg,new Date('2026-10-23T10:00:00'));assert.equal(pool.length,2);assert.equal(pool[0].matched.length,2);checks++;
+ for(const n of [NaN,101,-1,'70',70.5])assert.throws(()=>score({attentionScore:n}));assert.equal(score({attentionScore:70}),70);assert.throws(()=>analysis({...details,evidence:{}}));assert.equal(analysis(details).evidence.length,3);checks++;
+ const f=fixture();const [a,b]=await Promise.all([f.service.refresh(),f.service.refresh()]);assert.equal(f.calls,3);assert.equal(a.items[0].assessment.score,69);assert.equal(b.day,a.day);assert.equal(a.complete,true);await f.service.refresh();assert.equal(f.calls,3);checks++;
+ await f.service.tick();assert.equal(f.calls,3);await f.service.configure({...f.service.config(),keywords:['new interest']});await f.service.refresh();assert.equal(f.calls,6);checks++;
+ const before=await f.service.latest();f.fail=true;await assert.rejects(f.service.refresh(),/全部失败/);assert.deepEqual(await f.service.latest(),before);assert.match(f.service.state().error,/失败/);checks++;
+ const bad=fixture();bad.invalid=true;const r=await bad.service.refresh();assert.ok(r.items[0].analysisError);assert.equal(r.items[0].assessment,undefined);assert.equal(r.complete,true);checks++;
+ const off=fixture();await off.service.configure({...off.service.config(),enabled:false,ai:false});await off.service.tick();assert.equal(off.calls,0);const raw=await off.service.refresh();assert.equal(raw.items.length,1);assert.equal(off.calls,0);checks++;
+ const nextDay=fixture();await nextDay.service.refresh();nextDay.date='2026-10-24T10:00:00';const nextReport=await nextDay.service.refresh();assert.equal(nextReport.items.length,0);assert.equal(nextDay.calls,3);checks++;
+ console.log(`PASS: ${checks} recommendation settings, relevance, scoring, cache, failure and scheduling checks`);
+})().catch(e=>{console.error(e);process.exitCode=1;});
