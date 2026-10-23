@@ -1,10 +1,11 @@
 'use strict';
+const {renderNav}=require('./sidebar-nav');
 const {ItemView,Modal,Notice,Setting,setIcon,moment,requestUrl}=require('obsidian');
 const core=require('./daily-core');
 const TYPE='zhixing-daily',FOLDER='projects/个人工作台/日记';
 const el=(p,t,c,text)=>p.createEl(t,{cls:c,text});
 function button(p,text,cls,fn,icon){const b=el(p,'button','zd-btn '+(cls||''));b.type='button';if(icon){const s=el(b,'span','zd-icon');setIcon(s,icon);}el(b,'span','',text);b.onclick=async()=>{if(b.disabled)return;try{await fn();}catch(e){new Notice(e.message||'操作未完成');}};return b;}
-function sidebar(root,plugin){const side=el(root,'aside','zd-side');const brand=el(side,'div','zd-brand');const s=el(brand,'span','zd-icon');setIcon(s,'sprout');el(brand,'span','','知行之间');const nav=el(side,'nav','zd-nav');nav.setAttribute('aria-label','个人空间导航');for(const [label,icon,fn]of [['工作台','house',()=>plugin.openDesk()],['每日记录','calendar-days',()=>plugin.openDaily()],['论文','graduation-cap',()=>plugin.openPapers()],['项目空间','folder-open',()=>plugin.openDirectory('项目总览')],['知识索引','book-open',()=>plugin.openDirectory('wiki/index.md')]])button(nav,label,label==='每日记录'?'zd-nav-active':'',fn,icon);el(side,'p','zd-side-label','研究领域');for(const [title,path]of [['VLA 与具身模型','VLA MOC'],['世界模型','世界模型 MOC'],['数据采集','数据采集 MOC'],['机器人工程','机器人工程 MOC'],['Agent 与工具','Agent 学习 MOC']])button(side,title,'zd-topic',()=>plugin.openDirectory(path),'circle-small');}
+function sidebar(root,plugin){const side=el(root,'aside','zd-side');const brand=el(side,'div','zd-brand');const s=el(brand,'span','zd-icon');setIcon(s,'sprout');el(brand,'span','','知行之间');const nav=el(side,'nav','zd-nav');nav.setAttribute('aria-label','个人空间导航');renderNav(nav,plugin,button,{active:'daily'});el(side,'p','zd-side-label','研究领域');for(const [title,path]of [['VLA 与具身模型','VLA MOC'],['世界模型','世界模型 MOC'],['数据采集','数据采集 MOC'],['机器人工程','机器人工程 MOC'],['Agent 与工具','Agent 学习 MOC']])button(side,title,'zd-topic',()=>plugin.openDirectory(path),'circle-small');}
 module.exports=function installDaily(plugin){
  const app=plugin.app;let store;
  try{store=new core.LocalStore(app.vault.adapter.basePath,require('electron').remote?.safeStorage);}catch(e){plugin.dailyStorageError=e.message;}

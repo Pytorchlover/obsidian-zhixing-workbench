@@ -1,4 +1,5 @@
 'use strict';
+const {renderNav}=require('./sidebar-nav');
 const {Plugin, ItemView, MarkdownRenderChild, Notice, FuzzySuggestModal, PluginSettingTab, Setting, setIcon, moment} = require('obsidian');
 const VIEW = 'zhixing-research-desk';
 const DAILY = 'projects/个人工作台/日记';
@@ -50,12 +51,7 @@ class Desk{
     this.plugin.desks.add(this);this.host.addClass('zd-host');this.host.empty();this.root=el(this.host,'div','zd');
     const side=el(this.root,'aside','zd-side');const brand=el(side,'div','zd-brand');icon(brand,'sprout');el(brand,'span','','知行之间');
     const nav=el(side,'nav','zd-nav');nav.setAttribute('aria-label','工作台导航');
-    this.homeNav=button(nav,'工作台','zd-nav-active',()=>this.selectTab('today'),'house');
-    button(nav,'每日记录','',()=>this.act(()=>this.plugin.openDaily()),'calendar-days');
-    button(nav,'论文','',()=>this.act(()=>this.plugin.openPapers()),'graduation-cap');
-    button(nav,'每日推荐','',()=>this.act(()=>this.plugin.openRecommendations()),'sparkles');
-    button(nav,'项目空间','',()=>this.plugin.pickProjects(),'folder-open');
-    button(nav,'知识索引','',()=>this.plugin.openNote('wiki/index.md'),'book-open');
+    this.homeNav=renderNav(nav,this.plugin,button,{active:'desk',actions:{desk:()=>this.selectTab('today')},run:fn=>this.act(fn)}).desk;
     el(side,'p','zd-side-label','研究领域');
     for(const [label,link] of [['VLA 与具身模型','VLA MOC'],['世界模型','世界模型 MOC'],['数据采集','数据采集 MOC'],['机器人工程','机器人工程 MOC'],['Agent 与工具','Agent 学习 MOC']])button(side,label,'zd-topic',()=>this.plugin.openNote(link),'circle-small');
     const sf=el(side,'div','zd-side-foot');el(sf,'span','zd-avatar','我');el(sf,'span','','我的本地知识库');

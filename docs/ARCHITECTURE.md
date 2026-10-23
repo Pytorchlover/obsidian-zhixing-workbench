@@ -4,6 +4,7 @@
 
 - `main.js`：任务聚合、精确写回、计时、首页入口。
 - `navigation.js`：知识与项目目录视图。
+- `sidebar-nav.js`：所有工作台和 Markdown 阅读页共享的六项主导航、顺序与激活标记。每日推荐通过一次路由状态设置直达，避免先画本地论文列表再切换。
 - `daily.js` / `daily-core.js`：记录整理、加密本地存储、Markdown 保存。
 - `papers.js`：论文库、分类、摘要、选区操作与原生／React 挂载桥接。
 - `paper-chat.tsx`：assistant-ui LocalRuntime、消息和输入组件、会话切换。
