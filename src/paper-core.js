@@ -4,7 +4,12 @@ const ROOT='projects/个人工作台/论文库';
 const MODEL='MiniMax-M3.1-Flash';
 const line=s=>String(s||'').replace(/[\r\n]+/g,' ').trim();
 const md=s=>String(s||'').replace(/[\\`*_{}\[\]<>#!|]/g,'\\$&');
-function arxivId(input){let s=String(input).trim();if(/^\d{4}\.\d{4,5}(v\d+)?$/.test(s))return s;try{const u=new URL(s);if(!['arxiv.org','www.arxiv.org','alphaxiv.org','www.alphaxiv.org'].includes(u.hostname)||u.protocol!=='https:')return null;s=u.pathname.replace(/^\/(abs|pdf|html|overview)\//,'').replace(/\.pdf$/,'').replace(/\/$/,'');return /^\d{4}\.\d{4,5}(v\d+)?$/.test(s)?s:null;}catch{return null;}}
+function arxivId(input){
+ let value=String(input||'').trim();
+ const valid=/^(?:[0-9]{4}\.[0-9]{4,5}|[a-z-]+(?:\.[A-Z]{2})?\/[0-9]{7})(?:v[0-9]+)?$/;
+ if(valid.test(value))return value;
+ try{const u=new URL(value);if(!['arxiv.org','www.arxiv.org','export.arxiv.org','alphaxiv.org','www.alphaxiv.org'].includes(u.hostname)||!['https:','http:'].includes(u.protocol))return null;value=u.pathname.replace(/^\/(abs|pdf|html|overview)\//,'').replace(/\.pdf$/,'').replace(/\/$/,'');return valid.test(value)?value:null;}catch{return null;}
+}
 function paragraphsFromItems(items,width){
  const meaningful=items.filter(x=>x.str?.trim());if(!meaningful.length)return[];
  // Detect genuine two-column layouts from large horizontal gaps on shared baselines.

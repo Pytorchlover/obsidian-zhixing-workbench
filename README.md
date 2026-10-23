@@ -7,14 +7,14 @@
 本地 Markdown · 专注计时 · 每日记录 · 论文分类 · 双语 PDF · 流式选区问答
 
 ![Desktop](https://img.shields.io/badge/Obsidian-Desktop-7c3aed)
-![Version](https://img.shields.io/badge/version-1.2.0-356b50)
+![Version](https://img.shields.io/badge/version-1.3.0-356b50)
 ![Privacy](https://img.shields.io/badge/credentials-local%20encrypted-356b50)
 
 </div>
 
 ![浅色工作台：任务、专注计时与知识入口](docs/images/workbench-light.png)
 
-> 截图使用虚构任务与演示内容，不包含作者的私人笔记、实际对话或 API 密钥。当前为私人维护的桌面插件，未上架 Obsidian 社区市场。
+> 截图使用虚构任务、演示对话和公开论文检索结果，不包含作者的私人笔记、实际对话或 API 密钥。当前为私人维护的桌面插件，未上架 Obsidian 社区市场。
 
 ## 一张书桌，四种工作
 
@@ -30,6 +30,20 @@
 插件遵循 Obsidian 当前主题；在 Obsidian 外观中选择“适应系统”即可跟随系统切换。
 
 ![深色工作台](docs/images/workbench-dark.png)
+
+### 搜索 arXiv，加入自己的论文库
+
+在 **论文 → 搜索 arXiv** 输入英文关键词、标题、作者、编号或 arXiv 链接。也可以通过命令面板执行 **搜索 arXiv 论文**。
+
+- 按全部字段、标题或作者检索，按相关度、最新发表或最近更新排序，每页 10 篇。
+- 结果展示标题、作者、发布日期、主题分类和可展开的摘要；标题链接可打开 arXiv 页面。
+- 选择「入库分类」，点击 **加入论文库**：下载原始 PDF、提取全文并保存检索信息。完成后点击 **打开阅读**，继续生成中文摘要、翻译 PDF 或与论文对话。
+- 已归档的 arXiv 编号及其其他版本会显示「已在本地论文库」，直接打开已有记录，保留摘要、笔记和对话。不会用新版本覆盖原始 PDF。
+- PDF 保存在 `raw/assets/papers/`，论文数据与 arXiv 摘要、主题、日期保存在 `projects/个人工作台/论文库/<id>/paper.json`。归档后的原文可离线阅读。
+
+搜索使用 [arXiv 官方 API](https://info.arxiv.org/help/api/user-manual.html)，不需要模型密钥，也不调用 AI。请求串行并保持至少 3.1 秒间隔，相同查询缓存 5 分钟。中文关键词不会自动翻译，推荐用英文检索；搜索失败可重试或继续使用原有 PDF／链接导入。
+
+![arXiv 论文检索与本地归档](docs/images/arxiv-search.png)
 
 ### assistant-ui 论文对话
 
