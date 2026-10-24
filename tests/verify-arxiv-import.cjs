@@ -14,6 +14,8 @@ function fixture({broken=false}={}){
 const meta={id:'2410.24164v1',title:'A public VLA paper',authors:'Author One',abstract:'Stored abstract',categories:['cs.RO'],published:'2024-10-31',updated:'2024-10-31',doi:''};
 (async()=>{
  let n=0;
+ const large=fixture(),payload=new Uint8Array(36*1024*1024);payload.set(Buffer.from('%PDF-1.7\nlarge-fixture'));const accepted=await large.svc.importPdf(payload.buffer,{filename:'large.pdf'});assert.equal(accepted.pages.length,2);assert.equal(large.files.get(accepted.pdfPath).byteLength,payload.byteLength);n++;
+ const boundary=fixture();await assert.rejects(boundary.svc.importPdf({byteLength:core.PDF_MAX_BYTES+1}),/150 MB/);assert.equal(boundary.parses,0);assert.equal(boundary.files.size,0);n++;
  const f=fixture(),[a,b]=await Promise.all([f.svc.importArxiv(meta.id,()=>{},meta),f.svc.importArxiv(meta.id,()=>{},meta)]);
  assert.equal(a.id,b.id);assert.equal(f.calls.length,1);assert.equal(f.parses,1);assert.equal(a.pages.length,2);assert.equal(a.arxiv.abstract,'Stored abstract');assert.equal(a.source,'https://arxiv.org/abs/'+meta.id);assert.ok(f.files.has(a.pdfPath));assert.ok(f.files.has(core.ROOT+'/'+a.id+'/paper.json'));assert.equal(f.writes.length,2);n++;
  await f.svc.update(a.id,p=>{p.chat.push({role:'user',text:'keep my notes'});p.category='VLA';p.summary={overview:'Keep summary'};});

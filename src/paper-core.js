@@ -2,6 +2,7 @@
 const ID=/^[a-f0-9]{24}$/;
 const ROOT='projects/个人工作台/论文库';
 const MODEL='MiniMax-M3.1-Flash';
+const PDF_MAX_MB=150,PDF_MAX_BYTES=PDF_MAX_MB*1024*1024;
 const line=s=>String(s||'').replace(/[\r\n]+/g,' ').trim();
 const md=s=>String(s||'').replace(/[\\`*_{}\[\]<>#!|]/g,'\\$&');
 function arxivId(input){
@@ -37,4 +38,4 @@ function sourceText(bs){return bs.map(b=>`[${b.id} · 第${b.page}页]\n${b.text
 function jsonResponse(response,allowText=false){if(response.status<200||response.status>=300)throw new Error(({401:'密钥无效，请检查 MiniMax 配置。',403:'当前密钥没有模型权限。',429:'请求受限或额度不足，请稍后重试。'})[response.status]||`MiniMax 请求失败（HTTP ${response.status}）。`);const data=response.json;if(data?.base_resp?.status_code)throw new Error('MiniMax 未接受请求，请检查账户权限。');const c=data?.choices?.[0];if(c?.finish_reason==='length')throw new Error('模型输出被截断，请重试或缩小处理范围。');let text=c?.message?.content;if(typeof text!=='string'||text.length>150000)throw new Error('模型返回为空或超出限制。');text=text.trim();if(/^```(?:json)?\s/i.test(text))text=text.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');text=text.replace(/<think>[\s\S]*?<\/think>/g,'').trim();try{return JSON.parse(text);}catch{const fenced=text.match(/```json\s*([\s\S]*?)```/i);if(fenced){try{return JSON.parse(fenced[1]);}catch{}}if(allowText&&text&&!/^[{[]/.test(text))return {answer:text,refs:[]};throw new Error('模型未返回完整格式，本次结果没有保存，请重试。');}}
 function citationsMarkdown(ids,paper){return [...new Set(ids.map(id=>blocks(paper).find(b=>b.id===id)?.page).filter(Boolean))].map(page=>`[[${paper.pdfPath}#page=${page}|第 ${page} 页]]`).join('、');}
 function summaryMarkdown(paper){const s=paper.summary;if(!s)return'';let out=`# ${md(s.titleZh||paper.title)}\n\n${md(s.overview)}\n\n依据：${citationsMarkdown(s.overviewRefs,paper)}\n`;for(const [key,title]of [['problem','研究问题'],['method','核心方法'],['findings','主要结果'],['limitations','局限与待验证']])out+=`\n## ${title}\n\n`+(s[key].length?s[key].map(x=>`- ${md(x.text)}（${citationsMarkdown(x.refs,paper)}）`).join('\n'):'原文未提取出明确条目。')+'\n';return out;}
-module.exports={ID,ROOT,MODEL,line,md,arxivId,paragraphsFromItems,blocks,summary,translation,answer,contextFor,sourceText,chatContext,jsonResponse,summaryMarkdown};
+module.exports={ID,ROOT,MODEL,PDF_MAX_MB,PDF_MAX_BYTES,line,md,arxivId,paragraphsFromItems,blocks,summary,translation,answer,contextFor,sourceText,chatContext,jsonResponse,summaryMarkdown};
