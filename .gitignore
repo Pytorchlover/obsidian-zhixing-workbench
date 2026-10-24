@@ -16,3 +16,11 @@ local.enc*
 *.log
 
 .venv-zotero/
+
+# Local knowledge runtime and private vault roots
+/projects/
+/wiki/
+/raw/
+daily-*.json
+weekly-*.json
+capture-*.json

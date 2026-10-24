@@ -13,7 +13,7 @@ def check(name,data):
 for path in root.rglob('*'):
  if not path.is_file() or any(x in {'.git','node_modules','__pycache__'} for x in path.relative_to(root).parts):continue
  name=str(path.relative_to(root))
- if path.name in forbidden or path.suffix in {'.enc','.pem','.key'}:failures.append((name,'private runtime file'))
+ if path.name in forbidden or path.suffix in {'.enc','.pem','.key'} or re.match(r'^(?:daily-\d{4}-|weekly-\d{4}-W|capture-[a-f0-9]{16}\.json)',path.name):failures.append((name,'private runtime file'))
  if path.suffix=='.zip':
   with zipfile.ZipFile(path) as archive:
    for member in archive.namelist():check(name+'!'+member,archive.read(member))

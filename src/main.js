@@ -148,6 +148,7 @@ module.exports=class ResearchDesk extends Plugin{
     this.appendDailySection=appendSection;
     require('./daily')(this);
     require('./papers')(this);
+    require('./knowledge')(this);
     this.registerMarkdownCodeBlockProcessor('zhixing-desk',(_source,container,ctx)=>ctx.addChild(new DeskBlock(container,this)));
     this.addRibbonIcon('sprout','打开个人工作台',()=>this.openDesk());
     this.addCommand({id:'open-desk',name:'打开个人工作台',callback:()=>this.openDesk()});
