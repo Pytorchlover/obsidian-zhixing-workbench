@@ -14,10 +14,10 @@ def digest(p):
     return h.hexdigest()
 def classify(title, collections):
     s=title.lower()
-    if re.search(r'hand.*(recon|motion|forecast)|dyn-hamr|hawor',s): return 'Ego 手部重建'
+    if re.search(r'hand.*(recon|motion|forecast|recover|trajector|pose|tracking)|dyn-hamr|hawor',s): return '手部感知与运动恢复'
     if re.search(r'governance|curation|data quality|data processing',s): return '数据处理与治理'
     if re.search(r'umi|collection|egokit|forceband',s): return '数据采集'
-    if re.search(r'ego|human.*(data|video)|everyday human',s): return 'Ego 人类数据'
+    if re.search(r'ego|human.*(data|video)|everyday human',s): return '人类数据与机器人学习'
     if re.search(r'vla|foundation model|robotmanip|robomanip|foundation to application',s): return 'VLA'
     return '机器人工程'
 def attachment_path(root,key,value):
