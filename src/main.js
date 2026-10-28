@@ -1,10 +1,11 @@
 'use strict';
 const {renderNav}=require('./sidebar-nav');
 const {Plugin, ItemView, MarkdownRenderChild, Notice, FuzzySuggestModal, PluginSettingTab, Setting, setIcon, moment} = require('obsidian');
+const {TimerAlert}=require('./timer-alert');
 const VIEW = 'zhixing-research-desk';
 const DAILY = 'projects/个人工作台/日记';
 const HOME = '知识库首页.md';
-const defaults = () => ({durations:{focus:25,short:5,long:15},openOnStartup:true,timer:{phase:'focus',state:'idle',remainingMs:1500000,totalMs:1500000,endsAt:null,id:null,label:''}});
+const defaults = () => ({durations:{focus:25,short:5,long:15},openOnStartup:true,timerSound:true,pendingTimerAlert:null,timer:{phase:'focus',state:'idle',remainingMs:1500000,totalMs:1500000,endsAt:null,id:null,label:''}});
 const today = () => moment().format('YYYY-MM-DD');
 const safeText = value => String(value || '').replace(/<!--[^]*?-->/g,'').replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g,'$2').replace(/\[\[([^\]]+)\]\]/g,'$1').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/[*`]/g,'');
 const el = (parent,tag,cls,text) => parent.createEl(tag,{cls,text});
@@ -136,6 +137,8 @@ class DeskSettings extends PluginSettingTab{
   constructor(app,plugin){super(app,plugin);this.plugin=plugin;}
   display(){this.containerEl.empty();el(this.containerEl,'h2','','知行之间 · 工作台');
     for(const [phase,label] of [['focus','专注时长'],['short','短休息'],['long','长休息']])new Setting(this.containerEl).setName(label).setDesc('分钟，修改后从下一次计时生效').addText(t=>t.setValue(String(this.plugin.data.durations[phase])).onChange(async value=>{const n=Number(value);if(!Number.isInteger(n)||n<1||n>180)return;try{await this.plugin.transact(data=>{data.durations[phase]=n;if(data.timer.state==='idle'&&data.timer.phase===phase)data.timer.remainingMs=data.timer.totalMs=n*60000;});}catch(e){new Notice('未保存设置：'+e.message);}}));
+    new Setting(this.containerEl).setName('计时结束提示音').setDesc('专注或休息结束时，独立置顶弹窗同时播放系统提示音').addToggle(t=>t.setValue(this.plugin.data.timerSound!==false).onChange(async value=>{try{await this.plugin.transact(d=>{d.timerSound=value;});}catch(e){new Notice('未保存设置：'+e.message);}}));
+    new Setting(this.containerEl).setName('预览计时弹窗').setDesc('不改变当前计时，也不会写入专注记录').addButton(b=>b.setButtonText('预览').onClick(()=>this.plugin.previewTimerAlert()));
     new Setting(this.containerEl).setName('启动时打开工作台').addToggle(t=>t.setValue(this.plugin.data.openOnStartup).onChange(async value=>{try{await this.plugin.transact(d=>{d.openOnStartup=value;});}catch(e){new Notice('未保存设置：'+e.message);}}));
   }
 }
@@ -143,6 +146,7 @@ module.exports=class ResearchDesk extends Plugin{
   async onload(){
     const saved=await this.loadData();this.data=defaults();if(saved){this.data={...this.data,...saved,durations:{...this.data.durations,...saved.durations},timer:{...this.data.timer,...saved.timer}};}
     this.desks=new Set();this.queue=Promise.resolve();this.finishing=false;this.timerError='';this.nextRetry=0;this.dailyPromise=null;
+    this.timerAlert=new TimerAlert(this);
     this.registerView(VIEW,leaf=>new DeskView(leaf,this));
     require('./navigation')(this);
     this.appendDailySection=appendSection;
@@ -157,11 +161,14 @@ module.exports=class ResearchDesk extends Plugin{
     const schedule=()=>{window.clearTimeout(this.refreshTimeout);this.refreshTimeout=window.setTimeout(()=>{for(const d of this.desks)d.refresh();},180);};
     this.registerEvent(this.app.metadataCache.on('changed',file=>{if(this.eligible(file.path))schedule();}));
     for(const name of ['delete','rename','create'])this.registerEvent(this.app.vault.on(name,schedule));
-    this.registerInterval(window.setInterval(()=>{for(const d of this.desks)d.updateTimer();if(this.data.timer.state==='running'&&this.remaining()<=0&&!this.finishing&&Date.now()>=this.nextRetry)this.finishTimer().catch(()=>{});},1000));
+    this.registerInterval(window.setInterval(()=>this.checkTimer(),1000));
+    this.registerDomEvent(window,'focus',()=>this.checkTimer());
+    this.registerDomEvent(document,'visibilitychange',()=>{if(!document.hidden)this.checkTimer();});
+    try{const power=require('@electron/remote').powerMonitor;const resume=()=>this.checkTimer();power.on('resume',resume);this.register(()=>power.removeListener('resume',resume));}catch{}
     this.registerInterval(window.setInterval(schedule,60000));
-    this.app.workspace.onLayoutReady(()=>{if(this.data.openOnStartup)this.openDesk();});
+    this.app.workspace.onLayoutReady(()=>{if(this.data.openOnStartup)this.openDesk();if(this.data.pendingTimerAlert)this.timerAlert.show(this.data.pendingTimerAlert,{silent:true});this.checkTimer();});
   }
-  onunload(){window.clearTimeout(this.refreshTimeout);for(const d of [...this.desks])d.destroy();}
+  onunload(){this.previewAlert?.close();this.timerAlert?.close();window.clearTimeout(this.refreshTimeout);for(const d of [...this.desks])d.destroy();}
   eligible(path){return (path.startsWith('projects/')||path.startsWith('wiki/'))&&path.endsWith('.md')&&!path.includes('/设计预览/')&&!path.endsWith('/设计说明.md')&&!path.includes('/plugin/');}
   async getTasks(){
     const files=this.app.vault.getMarkdownFiles().filter(f=>this.eligible(f.path)&&(this.app.metadataCache.getFileCache(f)?.listItems||[]).some(i=>i.task!==undefined));
@@ -198,22 +205,26 @@ module.exports=class ResearchDesk extends Plugin{
     this.openingDesk=(async()=>{let leaf=this.app.workspace.getLeavesOfType(VIEW)[0];if(!leaf){leaf=this.app.workspace.getLeaf('tab');await leaf.setViewState({type:VIEW,active:true});}if(leaf.isDeferred)await leaf.loadIfDeferred();await this.app.workspace.revealLeaf(leaf);this.app.workspace.setActiveLeaf(leaf,{focus:true});if(leaf.view.desk)await leaf.view.desk.refresh();return leaf;})();
     try{return await this.openingDesk;}finally{this.openingDesk=null;}
   }
+  checkTimer(){for(const d of this.desks)d.updateTimer();if(this.data.timer.state==='running'&&this.remaining()<=0&&!this.finishing&&Date.now()>=this.nextRetry)this.finishTimer().catch(()=>{});}
+  previewTimerAlert(){const preview={data:this.data,handleTimerAlert:async()=>{},openDesk:()=>this.openDesk()};this.previewAlert?.close();this.previewAlert=new TimerAlert(preview);this.previewAlert.show({id:'preview',phase:'focus',label:'提醒效果预览 · 不会启动计时',totalMs:this.data.durations.focus*60000,completedAt:Date.now()});}
+  async handleTimerAlert(action,id){await this.transact(d=>{const a=d.pendingTimerAlert;if(!a||a.id!==id)return;if(action!=='dismiss'&&d.timer.state!=='idle')throw new Error('已有新的计时，请先处理当前计时。');if(action!=='dismiss'){const phase=action==='extend'?'focus':a.phase==='focus'?'short':'focus';const duration=action==='extend'?300000:d.durations[phase]*60000;d.timer={...d.timer,phase,state:'running',totalMs:duration,remainingMs:duration,endsAt:Date.now()+duration,id:'zd-'+Date.now()+'-'+Math.random().toString(36).slice(2,9),label:a.label};}d.pendingTimerAlert=null;});}
   remaining(){const t=this.data.timer;return t.state==='running'?Math.max(0,t.endsAt-Date.now()):t.remainingMs;}
   transact(fn){const operation=this.queue.then(async()=>{const next=JSON.parse(JSON.stringify(this.data));await fn(next);await this.saveData(next);this.data=next;for(const desk of this.desks)desk.updateTimer();});this.queue=operation.catch(()=>{});return operation;}
   async setFocus(label){await this.transact(d=>{if(d.timer.state!=='idle')throw new Error('本次计时已开始，请暂停后完成或重置，再更换任务。');d.timer.label=label;});new Notice('专注内容已设为：'+label);}
   async changePhase(phase){if(!['focus','short','long'].includes(phase))throw new Error('未知计时模式。');await this.transact(d=>{if(d.timer.state!=='idle')throw new Error('请先重置本次计时。');d.timer.phase=phase;d.timer.remainingMs=d.timer.totalMs=d.durations[phase]*60000;d.timer.id=null;});}
   async timerAction(){
     if(this.data.timer.state==='running'&&this.remaining()<=0)return this.finishTimer();
-    await this.transact(d=>{const t=d.timer;if(t.state==='running'){t.remainingMs=Math.max(0,t.endsAt-Date.now());t.endsAt=null;t.state='paused';}else{t.id=t.id||('zd-'+Date.now()+'-'+Math.random().toString(36).slice(2,9));t.endsAt=Date.now()+t.remainingMs;t.state='running';}});
+    await this.transact(d=>{d.pendingTimerAlert=null;const t=d.timer;if(t.state==='running'){t.remainingMs=Math.max(0,t.endsAt-Date.now());t.endsAt=null;t.state='paused';}else{t.id=t.id||('zd-'+Date.now()+'-'+Math.random().toString(36).slice(2,9));t.endsAt=Date.now()+t.remainingMs;t.state='running';}});this.timerAlert?.close();
   }
-  async resetTimer(){await this.transact(d=>{const t=d.timer;t.remainingMs=t.totalMs=d.durations[t.phase]*60000;t.state='idle';t.endsAt=null;t.id=null;});this.timerError='';for(const d of this.desks)d.updateTimer();}
+  async resetTimer(){await this.transact(d=>{d.pendingTimerAlert=null;const t=d.timer;t.remainingMs=t.totalMs=d.durations[t.phase]*60000;t.state='idle';t.endsAt=null;t.id=null;});this.timerAlert?.close();this.timerError='';for(const d of this.desks)d.updateTimer();}
   async finishTimer(){
     if(this.finishing||this.data.timer.state!=='running'||this.remaining()>0)return;
     this.finishing=true;for(const d of this.desks)d.updateTimer();
     try{await this.transact(async d=>{const t=d.timer;if(t.state!=='running'||t.endsAt>Date.now())return;
       if(t.phase==='focus'){const completed=moment(t.endsAt),day=completed.format('YYYY-MM-DD'),file=await this.ensureDaily(day);const marker=`<!-- zhixing-session:${t.id} -->`;const label=(t.label||'自由专注').replace(/[\r\n]/g,' ');const line=`- ${completed.format('HH:mm')} · 专注 ${Math.round(t.totalMs/60000)} 分钟 · ${label} ${marker}`;await this.app.vault.process(file,data=>data.includes(marker)?data:appendSection(data,'专注记录',line));}
+      d.pendingTimerAlert={id:t.id,phase:t.phase,label:t.label,totalMs:t.totalMs,completedAt:t.endsAt};
       t.phase=t.phase==='focus'?'short':'focus';t.state='idle';t.remainingMs=t.totalMs=d.durations[t.phase]*60000;t.endsAt=null;t.id=null;
-    });this.timerError='';this.nextRetry=0;new Notice(this.data.timer.phase==='short'?'这一段专注已记录。休息一下吧。':'休息结束，可以开始下一件事。');}
+    });this.timerError='';this.nextRetry=0;if(this.data.pendingTimerAlert)this.timerAlert.show(this.data.pendingTimerAlert);}
     catch(e){this.timerError='专注结果尚未保存：'+e.message;this.nextRetry=Date.now()+30000;new Notice(this.timerError);throw e;}
     finally{this.finishing=false;for(const d of this.desks){d.updateTimer();d.refresh();}}
   }
