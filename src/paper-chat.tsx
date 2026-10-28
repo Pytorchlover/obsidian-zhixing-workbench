@@ -2,7 +2,7 @@ import React, {createContext,useContext,useEffect,useMemo,useState,useSyncExtern
 import {createRoot} from 'react-dom/client';
 import {AssistantRuntimeProvider,useLocalRuntime,ExportedMessageRepository,ThreadPrimitive,MessagePrimitive,ComposerPrimitive,ActionBarPrimitive,BranchPickerPrimitive,useAuiState} from '@assistant-ui/react';
 import {MarkdownTextPrimitive} from '@assistant-ui/react-markdown';
-import {remarkPlugins,MarkdownTable} from './paper-markdown';
+import {remarkPlugins,rehypePlugins,preprocessMarkdown,MarkdownTable} from './paper-markdown';
 const {createStore}=require('./paper-threads');
 const {modelAdapter,captureContext}=require('./paper-chat-adapter');
 const {blocks}=require('./paper-core');
@@ -12,7 +12,7 @@ function Text(){
  const {preview}=useChat();
  const refs=useAuiState(s=>s.message.metadata.custom.refs) as string[]|undefined;
  const valid=useMemo(()=>new Set(refs||[]),[refs]);
- return <MarkdownTextPrimitive remarkPlugins={remarkPlugins} preprocess={text=>text.replace(/\[(p[0-9]+s[0-9]+)\]/g,(match,id)=>valid.has(id)?`[${match}](#zd-ref-${id})`:match)} components={{table:MarkdownTable,a:({href,children})=>href?.startsWith('#zd-ref-')?<button className="zd-aui-citation" onClick={()=>preview([href.slice(8)])}>{children}</button>:<a href={href} target="_blank" rel="noreferrer">{children}</a>}} />;
+ return <MarkdownTextPrimitive remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} preprocess={text=>preprocessMarkdown(text).replace(/\[(p[0-9]+s[0-9]+)\]/g,(match,id)=>valid.has(id)?`[${match}](#zd-ref-${id})`:match)} components={{table:MarkdownTable,a:({href,children})=>href?.startsWith('#zd-ref-')?<button className="zd-aui-citation" onClick={()=>preview([href.slice(8)])}>{children}</button>:<a href={href} target="_blank" rel="noreferrer">{children}</a>}} />;
 }
 function Message(){
  const {paper,preview}=useChat();

@@ -185,3 +185,14 @@
 .zd-knowledge .zd-main{animation:none}
 
 .zd-knowledge-preview{width:min(950px,92vw)}.zd-knowledge-preview .modal-content{max-height:75vh;overflow:auto;line-height:1.9}
+
+/* Adjustable conversation column; keep formulas and wide tables inside it. */
+.zd-papers .zd-paper-grid{grid-template-columns:minmax(0,1fr) var(--zd-chat-width,340px)}
+.zd-paper-chat-wrap{position:sticky;top:20px;min-width:0}
+.zd-paper-chat-wrap .zd-paper-chat.zd-assistant-chat{position:static}
+.zd-chat-resize{position:absolute;left:-16px;top:0;bottom:0;width:14px;cursor:col-resize;touch-action:none;z-index:5;outline:0}
+.zd-chat-resize::after{content:"";position:absolute;left:6px;top:20px;bottom:20px;width:2px;border-radius:2px;background:var(--zd-line);transition:background .15s}
+.zd-chat-resize:hover::after,.zd-chat-resize:focus-visible::after,.is-chat-resizing .zd-chat-resize::after{background:var(--zd-green);width:3px}
+.is-chat-resizing,.is-chat-resizing *{cursor:col-resize!important;user-select:none!important}
+.zd-aui-markdown .katex{font-size:1.08em;color:inherit}.zd-aui-markdown .katex-display{display:block;max-width:100%;overflow-x:auto;overflow-y:hidden;padding:8px 2px;margin:12px 0;overscroll-behavior-x:contain}.zd-aui-markdown .katex-display>.katex{white-space:nowrap}.zd-aui-markdown .katex-error{color:var(--zd-muted);white-space:pre-wrap}
+@container(max-width:1000px){.zd-papers .zd-paper-grid{grid-template-columns:minmax(0,1fr)}.zd-paper-chat-wrap{position:static}.zd-chat-resize{display:none}}

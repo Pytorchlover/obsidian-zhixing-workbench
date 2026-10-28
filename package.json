@@ -17,7 +17,9 @@
     "@assistant-ui/react-markdown": "0.14.24",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "remark-gfm": "4.0.1"
+    "rehype-katex": "7.0.1",
+    "remark-gfm": "4.0.1",
+    "remark-math": "6.0.0"
   },
   "devDependencies": {
     "@types/node": "26.6.5",
